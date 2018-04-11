@@ -16,62 +16,49 @@ int main(int argc, char **argv)
   ifstream idData(directory+"all.idx");
   int len_MovieData=0, len_IdData=0;
   string buffer;
-  while(getline(movieData,buffer))
-    {
-      len_MovieData++;
-    }
-  while(getline(idData,buffer))
-    {
-      len_IdData++;
-    }
-  if(len_MovieData!=len_IdData)
-    {
-      cout << "files have different sizes\n";
-      movieData.close();
-      idData.close();
-      return 1;
-    }
-  movieData.close();
-  idData.close();
-  movieData.open(directory+"all.dta");
-  idData.open(directory+"all.idx");
+
+  //split the files, quit if an invalid id is found
   ofstream base(directory+"split_base.txt");
   ofstream valid(directory+"split_valid.txt");
   ofstream hidden(directory+"split_hidden.txt");
   ofstream probe(directory+"split_probe.txt");
   ofstream qual(directory+"split_qual.txt");
-  for(i=0;i<len_MovieData;i++)
+  while(getline(movieData,buffer) && idData >> id)
     {
-      getline(movieData,buffer);
-      idData >> id;
       switch(id)
-	{
-	case 1:
-	  base << buffer;
-	  break;
-	case 2:
-	  valid << buffer;
-	  break;
-	case 3:
-	  hidden << buffer;
-	  break;
-	case 4:
-	  probe << buffer;
-	  break;
-	case 5:
-	  qual << buffer;
-	  break;
-	default:
-	  cout << "invalid ID: " << id << " at index " << i << endl;
-	  movieData.close();
-	  idData.close();
-	  base.close();
-	  valid.close();
-	  hidden.close();
-	  probe.close();
-	  qual.close();
-	  return 1;
-	}
+        {
+        case 1:
+          base << buffer;
+          base << endl;
+          break;
+        case 2:
+          valid << buffer;
+          valid << endl;
+          break;
+        case 3:
+          hidden << buffer;
+          hidden << endl;
+          break;
+        case 4:
+          probe << buffer;
+          probe << endl;
+          break;
+        case 5:
+          qual << buffer;
+          qual << endl;
+          break;
+        default:
+          cout << "invalid ID: " << id << " at index " << i << endl;
+          movieData.close();
+          idData.close();
+          base.close();
+          valid.close();
+          hidden.close();
+          probe.close();
+          qual.close();
+          return 1;
+        }
+
     }
   movieData.close();
   idData.close();
