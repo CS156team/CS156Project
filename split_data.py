@@ -6,10 +6,10 @@ import numpy as np
 movieData = []
 index = []
 
+#Do not read all this data into memory.
 movidData_f = open("./all.dta", "r")
-for line in movidData_f:
-  movieData.append(line.strip("\n"))
-
+  
+#this is less bad, since the file is smaller, but still
 index_f = open("./all.idx", "r")
 for line in index_f:
   index.append(line.strip("\n"))
@@ -20,19 +20,29 @@ hidden = open("split_hidden.txt","w+")
 probe = open("split_probe.txt","w+")
 qual = open("split_qual.txt","w+")
 
+#from googling "how to read to files at the same time python", I found code 
+#like this:
+
+#with open(file1) as f1, open(fil2) as f2:
+#  for x, y in zip(f1, f2):
+#     do stuff(x,y)
+
+#this seems like the best way to accomplish this without reading 2 gigabytes
+#into memory, but this should make the memory issue much less bad
+
 i = 0
-for data in movieData:
+for line in movidData_f:
   idx = index[i]
   if idx=="1" :
-    base.write(data+"\n")
+    base.write(line)
   elif idx=="2" :
-    valid.write(data+"\n")
+    valid.write(line)
   elif idx=="3" :
-    hidden.write(data+"\n")
+    hidden.write(line)
   elif idx=="4" :
-    probe.write(data+"\n")
+    probe.write(line)
   else:
-    qual.write(data+"\n")
+    qual.write(line)
   i = i+1;
 
 base.close() 
