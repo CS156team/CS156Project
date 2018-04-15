@@ -10,9 +10,8 @@ how many bytes are needed to store the movie id, days, and rating? I'm not
 storing the user ID's because they are too large, and I can always find them 
 later when the structure is being built). the rating is between 1 and 5 and 
 thus needs 3 bits to store. the movie id is between 1 and 17770, so can be 
-stored in 15 bits, leaving 14 bits for the day, which I haven't bothered to 
-put a range on because effort is hard, but 13 seems about right. So, by using 
-bitshifts, I can store all three numbers in a single integer with a single bit
+stored in 15 bits, leaving 14 bits for the day, which needs 12.  So, by using 
+bitshifts, I can store all three numbers in a single integer with a two bits bit
 to spare.
 */
 
@@ -51,6 +50,24 @@ int NetflixDataNode::get_rating() const
   return Data%8;
 }
 
+
+/*
+userID needs 19 bits, there are a maximum of 1675 ratings per user, so that 
+needs just 11 bits to store. 11+19 = 30 <32
+ */
+void NetflixAddressNode::set_Address(int userID,int pos)
+{
+  Address = userID;
+  Address <<= 11;
+  Address += pos;
+}
+
+void NetflixAddressNode::get_Address(int *userID, int *pos) const
+{
+  *pos = Address%2048;
+  *userID = Address >> 11;
+}
+
 /*
 the information is stored a an array of arrays, each array indexed by the user 
 id of some user, and is sorted according to movie id. This allows the rating 
@@ -59,55 +76,277 @@ users, and proportional to the log of the number of ratings the user made, by
 implementing a binary search. Also, one can determine the next rating in 
 constant time, allowing the entire dataset to be analyzed in time linear in 
 the number of datapoints. 
+
+In order to get all the reviews of a specific movie, I store the indices
+of the reviews of each movie in an analogous list. This functionality can be
+toggled on and off at will in the future, maybe.
 */
 
 NetflixDataStructure::NetflixDataStructure(string filename)
 {
-  int i,j;
+  SourceFile=filename;
+  int i,j,k;
+  last_pos=0;
+  
+  n_movies=17770;
   n_users=458293; //done by inspection of the data file
-  Lists = new NetflixDataNode*[n_users];
-  n_ratings = new int[n_users];
+  UserReviews = new NetflixDataNode*[n_users];
+  n_UserReviews = new int[n_users];
+  MovieReviews = new NetflixAddressNode*[n_movies];
+  n_MovieReviews = new int[n_movies];
+  int *n_UserReviews_temp = new int[n_users];
+  int *n_MovieReviews_temp = new int[n_movies];
   for(i=0;i<n_users;i++)
-    n_ratings[i]=0;
+    n_UserReviews[i]=0;
+  for(i=0;i<n_users;i++)
+    n_UserReviews_temp[i]=0;
+  for(i=0;i<n_movies;i++)
+    n_MovieReviews[i]=0;
+  for(i=0;i<n_movies;i++)
+    n_MovieReviews_temp[i]=0;
   
   ifstream file(filename);
   string line;
-  int user, rating, last_user;
+  int user, rating;
   short movie, days;
+  int temp_user, temp_pos;
+  //get size of everything to be allocated;
   while(getline(file,line))
     {
-      istringstream(line) >> user >> movie >> days >> rating;
-      n_ratings[user-1]++;
+      istringstream(line) >> user >> movie;
+      n_UserReviews[user-1]++;
+      n_MovieReviews[movie-1]++;
     }
+  int max=0;
+  
+  //sometimes you just want to know things
+  for(i=0;i<n_users;i++)
+    if(n_UserReviews[i]>max)
+      max=n_UserReviews[i];
+  cout << "max ratings by user: " << max << endl;
+  max=0;
+  for(i=0;i<n_movies;i++)
+    if(n_MovieReviews[i]>max)
+      max=n_MovieReviews[i];
+  cout << "max ratings of a movie: " << max << endl;
+
   file.close();
   file.open(filename);
   for(i=0;i<n_users;i++)
-    Lists[i]=new NetflixDataNode[n_ratings[i]];
-  j=0;
-  last_user=1;
+    UserReviews[i]=new NetflixDataNode[n_UserReviews[i]];
+  for(i=0;i<n_movies;i++)
+    MovieReviews[i] = new NetflixAddressNode[n_MovieReviews[i]];
+  max=0;
   while(getline(file,line))
     {
       istringstream(line) >> user >> movie >> days >> rating;
-      if(last_user!=user)
-	j=0;
-      Lists[user-1][j].set_NetflixDataNode(movie,days,rating);
-      if((movie!=Lists[user-1][j].get_MovieID()) ||
-	 (days!=Lists[user-1][j].get_Days()) || (rating!=Lists[user-1][j].get_rating()))
+      if(days>max)
+	max=days;
+      j=n_UserReviews_temp[user-1];
+      k=n_MovieReviews_temp[movie-1];
+      UserReviews[user-1][j].set_NetflixDataNode(movie,days,rating);
+      MovieReviews[movie-1][k].set_Address(user-1,j);
+      if((movie!=UserReviews[user-1][j].get_MovieID()) ||
+	 (days!=UserReviews[user-1][j].get_Days()) || (rating!=UserReviews[user-1][j].get_rating()))
 	cout << "data is not stored properly.\ngiven: " << user << " " << movie << " " << days << " " << rating << endl
-	     << "stored: " << user << Lists[user-1][j].get_MovieID() << " "
-	     << Lists[user-1][j].get_Days() << " " << Lists[user-1][j].get_rating() << endl;
-      j++;
+	     << "stored: " << user << UserReviews[user-1][j].get_MovieID() << " "
+	     << UserReviews[user-1][j].get_Days() << " " << UserReviews[user-1][j].get_rating() << endl;
+      MovieReviews[movie-1][n_MovieReviews_temp[movie-1]].get_Address(&temp_user, &temp_pos);
+      if((temp_user!=user-1) || (temp_pos!=j))
+	cout << "corrupt address.\n given: " << user-1 << " " << j << endl
+	     << "stored: " << temp_user << " " << temp_pos << endl;
+      n_UserReviews_temp[user-1]++;
+      n_MovieReviews_temp[movie-1]++;
+      
     }
-  last_User=0;
-  last_Movie=0;
+  cout << "max days: " << max << endl;
+  last_User=-1;
+  last_Movie=-1;
+  delete[] n_UserReviews_temp;
+  delete[] n_MovieReviews_temp;
 }
 
 NetflixDataStructure::~NetflixDataStructure()
 {
   int i;
   for(i=0;i<n_users;i++)
-    delete[] Lists[i];
-  delete[] Lists;
-  delete[] n_ratings;
+    delete[] UserReviews[i];
+  delete[] UserReviews;
+  for(i=0;i<n_movies;i++)
+    delete[] MovieReviews[i];
+  delete[] MovieReviews;
+  delete[] n_UserReviews;
+  delete[] n_MovieReviews;
+}
+
+int NetflixDataStructure::get_user_rating_of_movie(int user, int movie)
+{
+  //cout << user << " " << movie << " " << n_UserReviews[user-1] << endl;
+  //int i;
+  //for(i=0; i<n_UserReviews[user-1]; i++)
+  //cout << UserReviews[user-1][i].get_MovieID() << " ";
+  //cout << endl;
+  int next_pos = last_pos+1;
+  int next_id;
+
+  if(user == last_User+1)
+    {
+      if(movie==last_Movie+1)
+	return last_rating;
+      if(next_pos==n_UserReviews[user-1])
+	next_pos--;
+      next_id = UserReviews[last_User][next_pos].get_MovieID();
+      if(movie > last_Movie+1 && movie < next_id)
+	 return -1;
+      if(next_id==movie)
+	{
+	  last_pos=next_pos;
+	  last_Movie=movie-1;
+	  last_rating = UserReviews[user-1][last_pos].get_rating();
+	  return last_rating;
+	}
+    }
+  
+  int pos = binary_search_user(user-1, movie, 0, n_UserReviews[user-1]-1);
+  if(pos==-1)
+    return -1;
+  last_User=user-1;
+  last_Movie=movie-1;
+  last_pos=pos;
+  last_rating = UserReviews[user-1][pos].get_rating();
+  return last_rating;
+}
+
+int NetflixDataStructure::binary_search_user(int user, int movie, int min, int max)
+{
+  int min_movie, max_movie;
+  min_movie = UserReviews[user][min].get_MovieID();
+  max_movie = UserReviews[user][max].get_MovieID();
+  //cout << min << " " << min_movie << " " <<  max << " " << max_movie << endl;
+  if((min_movie > movie) || (max_movie < movie))
+    return -1;
+  int mid = (min+max)/2;
+  int mid_movie = UserReviews[user][mid].get_MovieID();
+  if(movie==mid_movie)
+    return mid;
+  else if(movie < mid_movie)
+    return binary_search_user(user,movie,min,mid);
+  else
+    return binary_search_user(user,movie,mid+1,max);
+}
+
+int NetflixDataStructure::binary_search_movie(int user, int movie, int min, int max)
+{
+  int min_user, max_user;
+  int min_pos, max_pos;
+  MovieReviews[movie][min].get_Address(&min_user, &min_pos);
+  MovieReviews[movie][max].get_Address(&max_user, &max_pos);
+
+  //cout << min << " " << min_movie << " " <<  max << " " << max_movie << endl;
+  if((min_user > user) || (max_user < user))
+    return -1;
+  int mid = (min+max)/2;
+  int mid_user, mid_pos;
+  MovieReviews[movie][mid].get_Address(&mid_user, &mid_pos);
+  if(user==mid_user)
+    return mid;
+  else if(user < mid_user)
+    return binary_search_movie(user,movie,min,mid);
+  else
+    return binary_search_movie(user,movie,mid+1,max);
+}
+
+//
+bool NetflixDataStructure::get_next_um(int *user, int *movie, int *days, int *rating)
+{
+  if(last_User==-1)
+    {
+      last_User=0;
+      last_pos=-1;
+      last_Movie = UserReviews[last_User][last_pos+1].get_MovieID();
+    }
+  else if(last_Movie!=UserReviews[last_User][last_pos].get_MovieID()-1)
+    {
+      //cout << "binary search\n";
+      last_pos = binary_search_user(last_User,last_Movie,0,n_UserReviews[last_User]);
+    }
+  last_pos++;
+  if(last_pos >= n_UserReviews[last_User])
+    {
+      last_pos=0;
+      last_User++;
+      if(last_User!=n_users)
+	while(n_UserReviews[last_User]==0)
+	  last_User++;
+    }
+  //cout << last_User << endl;
+  if(last_User==n_users)
+    {
+      cout << "finishing\n";
+      last_User=-1;
+      *user=-1;
+      *movie=-1;
+      *days=-1;
+      *rating=-1;
+      return false;
+    }
+  last_Movie = UserReviews[last_User][last_pos].get_MovieID()-1;
+  last_rating = UserReviews[last_User][last_pos].get_rating();
+  *user = last_User+1;
+  *movie = last_Movie+1;
+  *days = UserReviews[last_User][last_pos].get_Days();
+  *rating = last_rating;
+  return true;
+}
+
+bool NetflixDataStructure::get_next_mu(int *user, int *movie, int *days, int *rating)
+{
+  int temp_user, temp_pos;
+  if(last_Movie==-1)
+    {
+
+      last_Movie=0;
+      last_pos=-1;
+      MovieReviews[last_Movie][last_pos+1].get_Address(&temp_user,&temp_pos);
+      last_User = temp_user;
+    }
+  else 
+    {
+      MovieReviews[last_Movie][last_pos].get_Address(&temp_user,&temp_pos);
+      if(last_User!=temp_user)
+	{
+	  cout << "binary search\n";
+	  last_pos = binary_search_user(last_User,last_Movie,0,n_UserReviews[last_User]);
+	}
+    }
+  last_pos++;
+
+  if(last_pos >= n_MovieReviews[last_Movie])
+    {
+      last_pos=0;
+      last_Movie++;
+      if(last_Movie!=n_movies)
+	while(n_MovieReviews[last_Movie]==0)
+	  last_Movie++;
+    }
+  //cout << last_User << endl;
+  if(last_Movie==n_movies)
+    {
+      cout << "finishing\n";
+      last_Movie=-1;
+      *user=-1;
+      *movie=-1;
+      *days=-1;
+      *rating=-1;
+      return false;
+    }
+  MovieReviews[last_Movie][last_pos].get_Address(&temp_user,&temp_pos);
+  last_rating = UserReviews[temp_user][temp_pos].get_rating();
+  last_User = temp_user;
+  *user = temp_user+1;
+  *movie = last_Movie+1;
+  *days = UserReviews[temp_user][temp_pos].get_Days();
+  *rating = last_rating;
+  return true;
 }
 

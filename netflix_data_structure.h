@@ -30,20 +30,42 @@ class NetflixDataNode
   int get_rating() const;
 };
 
+
+//this is to make the linked list of all reviews of a specific movie
+//200 megabytes is a cheap price to pay for the added functionality imo
+class NetflixAddressNode
+{
+ private:
+  unsigned int Address;
+ public:
+  NetflixAddressNode() {Address=0;};
+  void set_Address(int,int);
+  void get_Address(int*, int*) const;
+};
+
+
 class NetflixDataStructure
 {
  private:
-  NetflixDataNode **Lists;
+  string SourceFile;
+  NetflixDataNode **UserReviews;
+  NetflixAddressNode **MovieReviews;
   int n_users;
-  int *n_ratings;
+  int n_movies;
+  int *n_UserReviews;
+  int *n_MovieReviews;
   int last_User;
   int last_Movie;
-
+  int last_pos;
+  int last_rating;
+  int binary_search_user(int,int,int,int);
+  int binary_search_movie(int,int,int,int);
  public:
   NetflixDataStructure(string);
   ~NetflixDataStructure();
   int get_user_rating_of_movie(int,int);
-  void get_next_using_of_movie(int*, int*, int*);
+  bool get_next_um(int*, int*, int*, int*);
+  bool get_next_mu(int*, int*, int*, int*);
   int get_day_of_urm(int,int);
   
 };
