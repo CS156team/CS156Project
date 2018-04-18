@@ -1,0 +1,10 @@
+Notes about svd1:
+
+- svd1 performs SVD factorization using SGD, training on 
+  idx 1 training data
+- makes predictions on qual.dta (idx 4)
+- can modify number of epochs (max_epochs), eta (learning rate), 
+  and regularization parameter (reg) in main.cpp
+- can set output file name in svd1.cpp (currently "submission.dta")
+- to compile: g++ -std=c++11 main.cpp svd1.cpp -o svd, then run ./svd
+- 'submission2.dta' currently gives qual RMSE -14%
