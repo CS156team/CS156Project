@@ -1,0 +1,40 @@
+#ifndef NETFLIX_DATA_STRUCTURE
+#define NETFLIX_DATA_STRUCTURE
+
+class NetflixDataNode
+{
+ private:
+  const unsigned int UserID;
+  const unsigned short MovieID;
+  const unsigned short ThirdID; //what is the third ID value?
+  const uint8 rating;
+  NetflixDataNode *nextUser;
+  NetflixDataNode *nextMovie;
+ public:
+  NetflixDataNode(const unsigned int, const unsigned short, const unsigned short, const uint8);
+  unsigned int get_UserID() const;
+  unsigned short get_MovieID() const;
+  unsigned short get_ThirdID() const;
+  uint8 get_rating() const;
+  void set_NextUser(NetflixDataNode*);
+  void set_NextMovie(NetflixDataNode*);
+  NetflixDataNode* get_NextUser() const;
+  NetflixDataNode* get_NextMovie() const;
+}
+
+class NetflixDataStructure
+{
+ private:
+  NetflixDataNode **UserLists;
+  NetflixDataNode **MovieLists;
+  int n_movies;
+  int n_users;
+  unsigned int last_User;
+  unsigned short last_Movie;
+  NetflixDataNode *lastNode;
+ public:
+  NetflixDataStructure(ifstream&);
+  
+}
+
+#endif
