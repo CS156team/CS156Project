@@ -164,6 +164,9 @@ NetflixDataStructure::NetflixDataStructure(string filename)
   last_Movie=-1;
   delete[] n_UserReviews_temp;
   delete[] n_MovieReviews_temp;
+  cout << MovieReviews << endl;
+  cout << MovieReviews[5659] << endl;
+  file.close();
 }
 
 NetflixDataStructure::~NetflixDataStructure()
@@ -181,6 +184,7 @@ NetflixDataStructure::~NetflixDataStructure()
 
 int NetflixDataStructure::get_user_rating_of_movie(int user, int movie)
 {
+  cout << MovieReviews[0] << endl;
   //cout << user << " " << movie << " " << n_UserReviews[user-1] << endl;
   //int i;
   //for(i=0; i<n_UserReviews[user-1]; i++)
@@ -202,6 +206,7 @@ int NetflixDataStructure::get_user_rating_of_movie(int user, int movie)
 	{
 	  last_pos=next_pos;
 	  last_Movie=movie-1;
+	  last_days = UserReviews[user-1][last_pos].get_Days();
 	  last_rating = UserReviews[user-1][last_pos].get_rating();
 	  return last_rating;
 	}
@@ -213,7 +218,9 @@ int NetflixDataStructure::get_user_rating_of_movie(int user, int movie)
   last_User=user-1;
   last_Movie=movie-1;
   last_pos=pos;
+  last_days = UserReviews[user-1][pos].get_Days();
   last_rating = UserReviews[user-1][pos].get_rating();
+  cout << MovieReviews[0] << endl;
   return last_rating;
 }
 
@@ -259,15 +266,16 @@ int NetflixDataStructure::binary_search_movie(int user, int movie, int min, int 
 //
 bool NetflixDataStructure::get_next_um(int *user, int *movie, int *days, int *rating)
 {
+  cout << MovieReviews[0] << endl;
   if(last_User==-1)
     {
       last_User=0;
       last_pos=-1;
       last_Movie = UserReviews[last_User][last_pos+1].get_MovieID();
     }
-  else if(last_Movie!=UserReviews[last_User][last_pos].get_MovieID()-1)
+  else if(last_pos >= n_UserReviews[last_User] || last_Movie!=UserReviews[last_User][last_pos].get_MovieID()-1)
     {
-      //cout << "binary search\n";
+      cout << "binary search\n";
       last_pos = binary_search_user(last_User,last_Movie,0,n_UserReviews[last_User]);
     }
   last_pos++;
@@ -292,16 +300,20 @@ bool NetflixDataStructure::get_next_um(int *user, int *movie, int *days, int *ra
     }
   last_Movie = UserReviews[last_User][last_pos].get_MovieID()-1;
   last_rating = UserReviews[last_User][last_pos].get_rating();
+  last_days = UserReviews[last_User][last_pos].get_Days();
   *user = last_User+1;
   *movie = last_Movie+1;
-  *days = UserReviews[last_User][last_pos].get_Days();
+  *days = last_days;
   *rating = last_rating;
+  cout << MovieReviews[0] << endl;
   return true;
 }
 
 bool NetflixDataStructure::get_next_mu(int *user, int *movie, int *days, int *rating)
 {
+  cout << "getting next mu\n";
   int temp_user, temp_pos;
+  NetflixAddressNode* address;
   if(last_Movie==-1)
     {
 
@@ -312,8 +324,26 @@ bool NetflixDataStructure::get_next_mu(int *user, int *movie, int *days, int *ra
     }
   else 
     {
-      MovieReviews[last_Movie][last_pos].get_Address(&temp_user,&temp_pos);
-      if(last_User!=temp_user)
+      cout << "last_pos: " << last_pos << " total_reviews: " << n_MovieReviews[last_Movie] << endl;
+      cout << "last_Movie: " << last_Movie << endl;
+      if(last_pos < n_MovieReviews[last_Movie])
+	{
+	  cout << "Hi!\n";
+	  cout << MovieReviews << endl;
+	  cout << MovieReviews[5659] << endl;
+	  address = MovieReviews[last_Movie]+last_pos;
+	  cout << address << endl;
+	  cout << "Hi, again!\n";
+	  MovieReviews[last_Movie][last_pos].get_Address(&temp_user,&temp_pos);
+	  cout << "Hi, again!\n";
+		  
+	  if(last_User!=temp_user)
+	    {
+	      cout << "binary search\n";
+	      last_pos = binary_search_user(last_User,last_Movie,0,n_UserReviews[last_User]);
+	    }
+	}
+      else
 	{
 	  cout << "binary search\n";
 	  last_pos = binary_search_user(last_User,last_Movie,0,n_UserReviews[last_User]);
@@ -342,11 +372,101 @@ bool NetflixDataStructure::get_next_mu(int *user, int *movie, int *days, int *ra
     }
   MovieReviews[last_Movie][last_pos].get_Address(&temp_user,&temp_pos);
   last_rating = UserReviews[temp_user][temp_pos].get_rating();
+  last_days = UserReviews[temp_user][temp_pos].get_Days();
   last_User = temp_user;
   *user = temp_user+1;
   *movie = last_Movie+1;
-  *days = UserReviews[temp_user][temp_pos].get_Days();
+  *days = last_days;
   *rating = last_rating;
   return true;
 }
+
+void NetflixDataStructure::peek(int *user, int *movie, int *days, int *rating) const
+{
+  cout << MovieReviews[0] << endl;
+  *user=last_User+1;
+  *movie=last_Movie+1;
+  *days=last_days;
+  *rating=last_rating;
+  cout << MovieReviews[0] << endl;
+}
+
+void NetflixDataStructure::store_current_pos()
+{
+  cout << MovieReviews[0] << endl;
+  stored_User = last_User;
+  stored_Movie = last_Movie;
+  stored_pos = last_pos;
+  stored_days = last_days;
+  stored_rating = last_rating;
+
+}
+
+void NetflixDataStructure::goto_stored_pos()
+{
+  cout << MovieReviews[0] << endl;
+  last_User = stored_User;
+  last_Movie = stored_Movie;
+  last_pos = stored_pos;
+  last_days = stored_days;
+  last_rating = stored_rating;
+  cout << MovieReviews[0] << endl;
+}
+
+void NetflixDataStructure::swap_current_and_stored_positions()
+{
+  cout << MovieReviews[0] << endl;
+  int temp;
+  temp = stored_User;
+  stored_User = last_User;
+  last_User = temp;
+
+  temp = stored_Movie;
+  stored_Movie = last_Movie;
+  last_Movie = temp;
+
+  temp = stored_pos;
+  stored_pos = last_pos;
+  last_pos = temp;
+
+  temp = stored_days;
+  stored_days = last_days;
+  last_days = temp;
+
+  temp = stored_rating;
+  stored_rating = last_rating;
+  last_rating = temp;
+  cout << MovieReviews[0] << endl;
+ }
+
+void NetflixDataStructure::goto_head_user(int user)
+{
+  cout << MovieReviews[0] << endl;
+  if(n_UserReviews[user]!=0)
+    {
+      last_User = user-1;
+      last_Movie = UserReviews[user-1][0].get_MovieID()-1;
+      last_pos = 0;
+      last_days = UserReviews[user-1][0].get_Days();
+      last_rating = UserReviews[user-1][0].get_rating();
+    }
+  cout << MovieReviews[0] << endl;
+}
+
+void NetflixDataStructure::goto_head_movie(int movie)
+{
+  cout << MovieReviews[0] << endl;
+  int temp_user,temp_pos;
+  if(n_MovieReviews[movie-1]!=0)
+    {
+      MovieReviews[movie-1][0].get_Address(&temp_user,&temp_pos);
+      last_User = temp_user;
+      last_Movie = movie-1;
+      last_pos = 0;
+      last_days = UserReviews[temp_user][temp_pos].get_Days();
+      last_rating = UserReviews[temp_user][temp_pos].get_rating();
+    }
+  cout << MovieReviews[0] << endl;
+}
+
 

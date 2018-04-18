@@ -54,20 +54,22 @@ class NetflixDataStructure
   int n_movies;
   int *n_UserReviews;
   int *n_MovieReviews;
-  int last_User;
-  int last_Movie;
-  int last_pos;
-  int last_rating;
+  int last_User,last_Movie, last_pos, last_days, last_rating;
+  int stored_User,stored_Movie, stored_pos, stored_days, stored_rating;
   int binary_search_user(int,int,int,int);
   int binary_search_movie(int,int,int,int);
  public:
   NetflixDataStructure(string);
   ~NetflixDataStructure();
   int get_user_rating_of_movie(int,int);
+  void peek(int*,int*,int*,int*) const;
   bool get_next_um(int*, int*, int*, int*);
   bool get_next_mu(int*, int*, int*, int*);
-  int get_day_of_urm(int,int);
-  
+  void goto_head_user(int);
+  void goto_head_movie(int);
+  void store_current_pos();
+  void goto_stored_pos();
+  void swap_current_and_stored_positions();
 };
 
 #endif
