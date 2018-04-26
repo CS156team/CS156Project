@@ -33,21 +33,17 @@ void NetflixDataNode::set_NetflixDataNode(const short inMovieID, const short inD
 
 int NetflixDataNode::get_MovieID() const
 {
-  unsigned int copy=Data;
-  copy>>=17;
-  return copy; 
+  return Data >> 17; 
 }
 
 int NetflixDataNode::get_Days() const
 {
-  unsigned int copy=Data;
-  copy>>=3;
-  return copy%16384;
+  return (Data>>3)&16383;
 }
 
 int NetflixDataNode::get_rating() const
 {
-  return Data%8;
+  return Data&7;
 }
 
 
@@ -58,14 +54,14 @@ needs just 11 bits to store. 11+19 = 30 <32
 void NetflixAddressNode::set_Address(int userID,int pos)
 {
   Address = userID;
-  Address <<= 11;
+  Address <<= 12;
   Address += pos;
 }
 
 void NetflixAddressNode::get_Address(int *userID, int *pos) const
 {
-  *pos = Address%2048;
-  *userID = Address >> 11;
+  *pos = Address&4095;
+  *userID = Address >> 12;
 }
 
 /*
