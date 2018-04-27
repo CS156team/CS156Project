@@ -133,6 +133,7 @@ NetflixDataStructure::NetflixDataStructure(string filename)
   for(i=0;i<n_movies;i++)
     MovieReviews[i] = new NetflixAddressNode[n_MovieReviews[i]];
   max=0;
+  n_datapoints=0;
   while(getline(file,line))
     {
       istringstream(line) >> user >> movie >> days >> rating;
@@ -153,8 +154,32 @@ NetflixDataStructure::NetflixDataStructure(string filename)
 	     << "stored: " << temp_user << " " << temp_pos << endl;
       n_UserReviews_temp[user-1]++;
       n_MovieReviews_temp[movie-1]++;
-      
+      n_datapoints++;
     }
+  averageUserReviews = new double[n_users];
+  averageMovieReviews = new double[n_movies];
+  for(i=0;i<n_users;i++)
+    averageUserReviews[i]=0;
+  for(i=0;i<n_movies;i++)
+    averageMovieReviews[i]=0;
+  
+  for(i=0;i<n_users;i++)
+    {
+      for(j=0;j<n_UserReviews[i];j++)
+	{
+	  rating = UserReviews[i][j].get_rating();
+	  movie = UserReviews[i][j].get_MovieID()-1;
+	  averageUserReviews[i]+=rating;
+	  averageMovieReviews[movie-1]+=rating;
+	  averageRating+=rating;
+	}
+    }
+  for(i=0;i<n_users;i++)
+    averageUserReviews[i]/=n_UserReviews[i];
+  for(i=0;i<n_movies;i++)
+    averageMovieReviews[i]/=n_MovieReviews[i];
+  averageRating/=n_datapoints;
+  cout << "average rating: " << averageRating << endl; 
   cout << "max days: " << max << endl;
   last_User=-1;
   last_Movie=-1;
@@ -383,6 +408,21 @@ bool NetflixDataStructure::get_next_mu(int *user, int *movie, int *days, int *ra
   return true;
 }
 
+bool NetflixDataStructure::get_next_mu(int *user, int *movie, int *days, double *residue)
+{
+  int rating;
+  get_next_mu(user, movie, days, &rating);
+  residue = average_rating + (averageUserReview[*user-1]-rating)+(averageMovieReview[*movie-1]);
+}
+
+bool NetflixDataStructure::get_next_um(int *user, int *movie, int *days, double *residue)
+{
+  int rating;
+  get_next_um(user, movie, days, &rating);
+  residue = average_rating + (averageUserReview[*user-1]-rating)+(averageMovieReview[*movie-1);
+}
+
+    
 void NetflixDataStructure::peek(int *user, int *movie, int *days, int *rating) const
 {
   *user=last_User+1;

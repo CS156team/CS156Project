@@ -52,8 +52,13 @@ class NetflixDataStructure
   NetflixAddressNode **MovieReviews;
   int n_users;
   int n_movies;
+  int n_datapoints;
   int *n_UserReviews;
   int *n_MovieReviews;
+  double *averageUserReviews;
+  double *averageMovieReviews;
+  double *averageDayReview;
+  double averageRating;
   int last_User,last_Movie, last_pos, last_days, last_rating;
   int stored_User,stored_Movie, stored_pos, stored_days, stored_rating;
   int binary_search_user(int,int,int,int);
@@ -65,6 +70,8 @@ class NetflixDataStructure
   void peek(int*,int*,int*,int*) const;
   bool get_next_um(int*, int*, int*, int*);
   bool get_next_mu(int*, int*, int*, int*);
+  bool get_next_um(int*, int*, int*, double*);
+  bool get_next_mu(int*, int*, int*, double*);
   void goto_head_user(int);
   void goto_head_movie(int);
   void store_current_pos();
